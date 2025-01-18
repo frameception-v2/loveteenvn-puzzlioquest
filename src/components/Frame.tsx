@@ -17,19 +17,97 @@ import { createStore } from "mipd";
 import { Label } from "~/components/ui/label";
 import { PROJECT_TITLE } from "~/lib/constants";
 
-function ExampleCard() {
+function PuzzleGame() {
+  const [tiles, setTiles] = useState([1, 2, 3, 4, 5, 6, 7, 8, 0]);
+  const [moves, setMoves] = useState(0);
+  const [solved, setSolved] = useState(false);
+
+  // Initialize the puzzle in a solvable state
+  useEffect(() => {
+    shuffleTiles();
+  }, []);
+
+  const shuffleTiles = () => {
+    let newTiles;
+    do {
+      newTiles = [1, 2, 3, 4, 5, 6, 7, 8, 0]
+        .sort(() => Math.random() - 0.5);
+    } while (!isSolvable(newTiles));
+    
+    setTiles(newTiles);
+    setMoves(0);
+    setSolved(false);
+  };
+
+  const isSolvable = (tiles: number[]) => {
+    let inversions = 0;
+    for (let i = 0; i < tiles.length; i++) {
+      for (let j = i + 1; j < tiles.length; j++) {
+        if (tiles[i] > tiles[j] && tiles[i] !== 0 && tiles[j] !== 0) {
+          inversions++;
+        }
+      }
+    }
+    return inversions % 2 === 0;
+  };
+
+  const moveTile = (index: number) => {
+    if (solved) return;
+    
+    const emptyIndex = tiles.indexOf(0);
+    const row = Math.floor(index / 3);
+    const col = index % 3;
+    const emptyRow = Math.floor(emptyIndex / 3);
+    const emptyCol = emptyIndex % 3;
+
+    if ((row === emptyRow && Math.abs(col - emptyCol) === 1) ||
+        (col === emptyCol && Math.abs(row - emptyRow) === 1)) {
+      const newTiles = [...tiles];
+      [newTiles[index], newTiles[emptyIndex]] = [newTiles[emptyIndex], newTiles[index]];
+      setTiles(newTiles);
+      setMoves(moves + 1);
+      
+      if (isSolved(newTiles)) {
+        setSolved(true);
+      }
+    }
+  };
+
+  const isSolved = (tiles: number[]) => {
+    for (let i = 0; i < tiles.length - 1; i++) {
+      if (tiles[i] !== i + 1) return false;
+    }
+    return true;
+  };
+
   return (
     <Card className="border-neutral-200 bg-white">
       <CardHeader>
-        <CardTitle className="text-neutral-900">Welcome to the Frame Template</CardTitle>
+        <CardTitle className="text-neutral-900">Sliding Puzzle</CardTitle>
         <CardDescription className="text-neutral-600">
-          This is an example card that you can customize or remove
+          {solved ? "Congratulations! 🎉" : `Moves: ${moves}`}
         </CardDescription>
       </CardHeader>
       <CardContent className="text-neutral-800">
-        <p>
-          Your frame content goes here. The text is intentionally dark to ensure good readability.
-        </p>
+        <div className="grid grid-cols-3 gap-1 w-[150px] mx-auto">
+          {tiles.map((tile, index) => (
+            <button
+              key={index}
+              onClick={() => moveTile(index)}
+              className={`w-12 h-12 flex items-center justify-center 
+                ${tile === 0 ? 'bg-transparent' : 'bg-purple-500 hover:bg-purple-600'} 
+                text-white font-bold rounded-md transition-colors`}
+              disabled={tile === 0 || solved}
+            >
+              {tile !== 0 && tile}
+            </button>
+          ))}
+        </div>
+        {solved && (
+          <div className="mt-4 text-center">
+            <PurpleButton onClick={shuffleTiles}>Play Again</PurpleButton>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -137,7 +215,7 @@ export default function Frame(
     >
       <div className="w-[300px] mx-auto py-2 px-2">
         <h1 className="text-2xl font-bold text-center mb-4 text-neutral-900">{title}</h1>
-        <ExampleCard />
+        <PuzzleGame />
       </div>
     </div>
   );
